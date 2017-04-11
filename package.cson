@@ -33,7 +33,7 @@
 
 name: "readium-js"
 
-version: "0.22.3"
+version: "0.25.0"
 
 engines:
     node: ">=0.12"
@@ -90,7 +90,11 @@ files: [
 #####################################################################
 dependencies:
 
-    "parallelshell": 'latest'
+    #"parallelshell": 'latest'
+    "concurrently": 'latest'
+
+    "npm-run-all": 'latest'
+
 
     "opener": 'latest'
 
@@ -108,7 +112,7 @@ devDependencies:
 
 #    "zipjs": 'gildas-lormeau/zip.js'
 #    "zipjs": 'ryanackley/zip.js'
-    "zipjs": "danielweck/zip.js"
+    "zip-js": "danielweck/zip.js"
 
 # see readium-cfi-js:
 # "requirejs", "almond", "jquery"
@@ -145,12 +149,14 @@ scripts:
             prepare:submodule
         &&
         npm run
-            prepare:dependencies
+            prepare:local
     '
 
 #=====================
-    'prepare:dependencies': '
+    'prepare:local': '
 
+        npm outdated
+        &&
         npm install
         &&
         npm update
@@ -179,8 +185,16 @@ scripts:
         &&
         npm run rimraf
             build-output/*
+        &&
+        npm run rimraf
+            api-docs/*
     '
 
+#=====================
+    apidocs: '
+
+        npm run yuidocjs
+    '
 
 #=====================
     'prebuild': '
@@ -202,7 +216,7 @@ scripts:
     lint: '
 
         npm run jshint
-            js/**.js
+            "js/**.js"
     '
 
 #=====================
@@ -285,22 +299,24 @@ scripts:
         npm run cpy
             build-output/_multiple-bundles/inflate.js
             build-output/
+
+        &&
+        npm run rimraf
+            build-output/_multiple-bundles/z-worker.js
         &&
         npm run rimraf
             build-output/_multiple-bundles/deflate.js
         &&
         npm run rimraf
             build-output/_multiple-bundles/inflate.js
-        &&
-        npm run rimraf
-            build-output/_multiple-bundles/z-worker.js
-
 
         &&
+        (
         npm run cpy
             build-output/_multiple-bundles/z-worker.js.map
             build-output/
         &&
+        (
         npm run cpy
             build-output/_multiple-bundles/deflate.js.map
             build-output/
@@ -308,15 +324,19 @@ scripts:
         npm run cpy
             build-output/_multiple-bundles/inflate.js.map
             build-output/
+            
+        &&
+        npm run rimraf
+            build-output/_multiple-bundles/z-worker.js.map
         &&
         npm run rimraf
             build-output/_multiple-bundles/deflate.js.map
         &&
         npm run rimraf
             build-output/_multiple-bundles/inflate.js.map
-        &&
-        npm run rimraf
-            build-output/_multiple-bundles/z-worker.js.map
+        )
+        || echo "=== SUCCESS [ignore previous error]: no sourcemaps were generated for zip web-worker, deflate, inflate (no uglification)."
+        )
     '
 
 #=====================
@@ -370,11 +390,11 @@ scripts:
 
         echo > open_webbrowser.js
         &&
-        parallelshell
-            \"npm run dowatch\"
-            \"npm run httpServe\"
+        run-p
+            \"dowatch\"
+            \"httpServe\"
     '
-#    \"npm run live-reload\"
+#    \"live-reload\"
 
 #=====================
 #### BLOCKING! (CTRL-C) [http]
